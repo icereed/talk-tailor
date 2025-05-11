@@ -54,8 +54,8 @@ graph TD
 ### Clone the Repository
 
 ```bash
-git clone https://github.com/yourusername/talktailor.git
-cd talktailor
+git clone https://github.com/icereed/talk-tailor.git
+cd talk-tailor
 ```
 
 ---
@@ -93,12 +93,20 @@ The production build will be placed in `client/dist` and served by the Go backen
 
 ## Docker Usage
 
-Build and run the application using Docker:
+You can run the latest image directly from GitHub Container Registry (GHCR):
 
 ```bash
-docker build -t talktailor .
-docker run -e OPENAI_API_KEY=your-openai-key -p 8080:8080 talktailor
+docker run -e OPENAI_API_KEY=your-openai-key -p 8080:8080 ghcr.io/icereed/talk-tailor:latest
 ```
+
+Or build and run locally:
+
+```bash
+docker build -t talk-tailor .
+docker run -e OPENAI_API_KEY=your-openai-key -p 8080:8080 talk-tailor
+```
+
+**Image source:** [ghcr.io/icereed/talk-tailor](https://github.com/icereed/talk-tailor/pkgs/container/talk-tailor)
 
 ---
 

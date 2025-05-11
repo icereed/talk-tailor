@@ -1,0 +1,26 @@
+body {
+  font-family: 'Roboto', sans-serif;
+  background-color: #f8f9fa;
+}
+
+h1,
+h2 {
+  color: #4a5568;
+}
+
+#spinner {
+  display: none;
+}
+
+.main-section {
+  background-color: #ffffff;
+  padding: 40px;
+  border-radius: 15px;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+.app-explanation {
+  font-size: 1.1rem;
+  color: #4a5568;
+  margin-bottom: 30px;
+}

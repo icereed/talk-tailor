@@ -1,19 +1,11 @@
-name: Build and Push Docker image to GHCR
-
-permissions:
-  pull-requests: write
-  contents: read
-  packages: write # Added permission for GitHub Container Registry
-
+name: PR Checks
 
 on:
-  push:
+  pull_request:
     branches: [main]
-  release:
-    types: [published]
 
 jobs:
-  build-and-push:
+  pr-checks:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -37,9 +29,6 @@ jobs:
         with:
           go-version: '1.22'
 
-      - name: Build backend
-        run: go build -v .
-
       - name: Go tests
         run: go test -v ./...
 
@@ -49,19 +38,10 @@ jobs:
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
 
-      - name: Log in to GHCR
-        uses: docker/login-action@v3
-        with:
-          registry: ghcr.io
-          username: ${{ github.actor }}
-          password: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Build and push Docker image
+      - name: Build Docker image (optional)
         uses: docker/build-push-action@v5
         with:
           context: .
-          push: true
-          platforms: linux/amd64,linux/arm64
-          tags: ghcr.io/icereed/talk-tailor:latest
+          push: false
           cache-from: type=gha
           cache-to: type=gha,mode=max

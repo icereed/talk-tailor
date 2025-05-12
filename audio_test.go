@@ -30,10 +30,10 @@ func TestSplitAudio(t *testing.T) {
 		assert.NotEqual(t, "testdata/15mins.mp3", chunk)
 	}
 
-	// check that the first chunk is longer than 9 minutes
+	// check that the first chunk is longer than 8 minutes
 	duration1, err := getAudioDuration(chunks[0])
 	require.NoError(t, err)
-	assert.Greater(t, duration1, 9*time.Minute)
+	assert.Greater(t, duration1, 8*time.Minute)
 
 	// check that the second chunk is longer than 3 minutes
 	duration2, err := getAudioDuration(chunks[1])

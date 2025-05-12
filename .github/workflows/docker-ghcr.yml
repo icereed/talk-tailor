@@ -1,5 +1,11 @@
 name: Build and Push Docker image to GHCR
 
+permissions:
+  pull-requests: write
+  contents: read
+  packages: write # Added permission for GitHub Container Registry
+
+
 on:
   push:
     branches: [main]

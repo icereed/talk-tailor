@@ -12,7 +12,7 @@ require (
 	github.com/sashabaranov/go-openai v1.29.1
 	github.com/stretchr/testify v1.9.0
 	github.com/u2takey/ffmpeg-go v0.5.0
-	github.com/wbrown/gpt_bpe v0.0.0-20240827163014-38785c5e8d2f
+	github.com/wbrown/gpt_bpe v0.0.0-20250423132500-7e0719ae0248
 )
 
 require (

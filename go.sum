@@ -173,6 +173,8 @@ github.com/vikesh-raj/go-sentencepiece-encoder v1.1.1 h1:q5Rm4ihhwmAiDycaL8rNiE/
 github.com/vikesh-raj/go-sentencepiece-encoder v1.1.1/go.mod h1:GlANpY4lgPZT+cpb0pkEJrTMbICKc74KleEZwEiGqmU=
 github.com/wbrown/gpt_bpe v0.0.0-20240827163014-38785c5e8d2f h1:/OvV1/tGlFQoi8B9Ykvjby2j/jizWJI07wZbToscKSk=
 github.com/wbrown/gpt_bpe v0.0.0-20240827163014-38785c5e8d2f/go.mod h1:icGKnhF4Yds0SsYQE7ujc3yZBuibjOyQsGk5qpH2DCA=
+github.com/wbrown/gpt_bpe v0.0.0-20250423132500-7e0719ae0248 h1:7I/+kuVfjk2vt2JnYdDP8MUtiz2IVmrepIpYntGnWP8=
+github.com/wbrown/gpt_bpe v0.0.0-20250423132500-7e0719ae0248/go.mod h1:JgpacCZVODvHlSDBMSZLAk5Vos9caTVHBHCOAJulWDE=
 gocv.io/x/gocv v0.25.0/go.mod h1:Rar2PS6DV+T4FL+PM535EImD/h13hGVaHhnCu1xarBs=
 golang.org/x/arch v0.10.0 h1:S3huipmSclq3PJMNe76NGwkBR504WFkQ5dhzWzP8ZW8=
 golang.org/x/arch v0.10.0/go.mod h1:FEVrYAQjsQXMVJ1nsMoVVXPZg6p2JE2mx8psSWTDQys=

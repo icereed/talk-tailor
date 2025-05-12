@@ -7,7 +7,7 @@ COPY client/ ./
 RUN npm run build
 
 # Stage 2: Build Go backend
-FROM golang:1.23-alpine AS go-build-stage
+FROM golang:1.24-alpine AS go-build-stage
 ENV CGO_ENABLED=0
 WORKDIR /app
 RUN apk add --no-cache ffmpeg

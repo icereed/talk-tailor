@@ -1,67 +1,209 @@
-name: Build and Push Docker image to GHCR
+name: Build and Push Docker Images
 
 permissions:
   pull-requests: write
   contents: read
   packages: write # Added permission for GitHub Container Registry
 
-
 on:
   push:
-    branches: [main]
-  release:
-    types: [published]
+    branches:
+      - main
+    tags:
+      - 'v*.*.*'
+  pull_request:
+    branches:
+      - main
 
 jobs:
-  build-and-push:
+  test:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-
+      - name: Checkout code
+        uses: actions/checkout@v4
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: 1.22
       - name: Set up Node.js
         uses: actions/setup-node@v4
         with:
           node-version: 18
-
+      - name: Cache npm dependencies
+        uses: actions/cache@v4
+        with:
+          path: ~/.npm
+          key: ${{ runner.os }}-node-${{ hashFiles('client/package-lock.json') }}
+          restore-keys: |
+            ${{ runner.os }}-node-
+      - name: Install frontend dependencies
+        run: npm ci
+        working-directory: client
       - name: Build frontend
-        run: |
-          cd client
-          npm ci
-          npm run build
-
+        run: npm run build
+        working-directory: client
       - name: Install ffmpeg
         run: sudo apt-get update && sudo apt-get install -y ffmpeg
-
-      - name: Set up Go
-        uses: actions/setup-go@v5
-        with:
-          go-version: '1.22'
-
-      - name: Build backend
-        run: go build -v .
-
-      - name: Go tests
+      - name: Install Go dependencies
+        run: go mod download
+      - name: Run Go tests
         run: go test -v ./...
 
-      - name: Set up QEMU
-        uses: docker/setup-qemu-action@v3
-
+  build-amd64:
+    runs-on: ubuntu-latest
+    needs: test
+    outputs:
+      digest: ${{ steps.build_amd64.outputs.digest }}
+      image_tag: ${{ steps.set_image_tag.outputs.image_tag }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
-
-      - name: Log in to GHCR
+      - name: Log in to GitHub Container Registry
         uses: docker/login-action@v3
         with:
           registry: ghcr.io
-          username: ${{ github.actor }}
+          username: ${{ github.repository_owner }}
           password: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Build and push Docker image
-        uses: docker/build-push-action@v5
+      - name: Set Docker tags
+        id: set_tags
+        run: |
+          GHCR_REPO="ghcr.io/${GITHUB_REPOSITORY}"
+          if [[ "${GITHUB_EVENT_NAME}" == "pull_request" ]]; then
+            echo "TAGS=${GHCR_REPO}:pr-${GITHUB_SHA}-amd64" >> $GITHUB_ENV
+          elif [[ "${GITHUB_REF_TYPE}" == "tag" ]]; then
+            VERSION=${GITHUB_REF#refs/tags/}
+            echo "TAGS=${GHCR_REPO}:${VERSION}-amd64" >> $GITHUB_ENV
+          else
+            echo "TAGS=${GHCR_REPO}:unreleased-amd64" >> $GITHUB_ENV
+          fi
+      - name: Build and push AMD64 image
+        id: build_amd64
+        uses: docker/build-push-action@v6
         with:
           context: .
+          platforms: linux/amd64
           push: true
-          platforms: linux/amd64,linux/arm64
-          tags: ghcr.io/icereed/talk-tailor:latest
           cache-from: type=gha
           cache-to: type=gha,mode=max
+          tags: ${{ env.TAGS }}
+          build-args: |
+            VERSION=${{ github.ref_type == 'tag' && github.ref_name || github.sha }}
+            COMMIT=${{ github.sha }}
+            BUILD_DATE=${{ github.event.repository.pushed_at }}
+      - name: Set image tag output
+        id: set_image_tag
+        run: echo "image_tag=${TAGS}" >> $GITHUB_OUTPUT
+      - name: Export digest for amd64
+        run: |
+          mkdir -p ${{ runner.temp }}/digests
+          echo "${{ steps.build_amd64.outputs.digest }}" | sed 's/^sha256://g' > ${{ runner.temp }}/digests/digest-amd64.txt
+      - name: Upload amd64 digest
+        uses: actions/upload-artifact@v4
+        with:
+          name: digest-amd64
+          path: ${{ runner.temp }}/digests/digest-amd64.txt
+
+  build-arm64:
+    runs-on: ubuntu-24.04-arm
+    needs: test
+    outputs:
+      digest: ${{ steps.build_arm64.outputs.digest }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+      - name: Log in to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.repository_owner }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - name: Set Docker tags
+        id: set_tags
+        run: |
+          GHCR_REPO="ghcr.io/${GITHUB_REPOSITORY}"
+          if [[ "${GITHUB_REF_TYPE}" == "tag" ]]; then
+            VERSION=${GITHUB_REF#refs/tags/}
+            echo "TAGS=${GHCR_REPO}:${VERSION}-arm64" >> $GITHUB_ENV
+          else
+            echo "TAGS=${GHCR_REPO}:unreleased-arm64" >> $GITHUB_ENV
+          fi
+      - name: Build and push ARM64 image
+        id: build_arm64
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          platforms: linux/arm64
+          push: ${{ github.event_name != 'pull_request' }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+          tags: ${{ env.TAGS }}
+          build-args: |
+            VERSION=${{ github.ref_type == 'tag' && github.ref_name || github.sha }}
+            COMMIT=${{ github.sha }}
+            BUILD_DATE=${{ github.event.repository.pushed_at }}
+      - name: Export digest for arm64
+        run: |
+          mkdir -p ${{ runner.temp }}/digests
+          echo "${{ steps.build_arm64.outputs.digest }}" | sed 's/^sha256://g' > ${{ runner.temp }}/digests/digest-arm64.txt
+      - name: Upload arm64 digest
+        uses: actions/upload-artifact@v4
+        with:
+          name: digest-arm64
+          path: ${{ runner.temp }}/digests/digest-arm64.txt
+
+  merge-manifests:
+    needs: [build-amd64, build-arm64]
+    runs-on: ubuntu-latest
+    if: github.event_name != 'pull_request'
+    env:
+      GHCR_REPO: ghcr.io/${{ github.repository }}
+    steps:
+      - name: Download amd64 digest
+        uses: actions/download-artifact@v4
+        with:
+          name: digest-amd64
+          path: ${{ runner.temp }}/digests
+      - name: Download arm64 digest
+        uses: actions/download-artifact@v4
+        with:
+          name: digest-arm64
+          path: ${{ runner.temp }}/digests
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+      - name: Login to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.repository_owner }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - name: Determine version/tag
+        id: get_version
+        run: |
+          if [[ "${GITHUB_REF_TYPE}" == "tag" ]]; then
+            VERSION=${GITHUB_REF#refs/tags/}
+            echo "VERSION=${VERSION}" >> $GITHUB_ENV
+          else
+            echo "VERSION=unreleased" >> $GITHUB_ENV
+          fi
+      - name: Create and push manifest lists
+        run: |
+          AMD64_DIGEST=$(cat ${{ runner.temp }}/digests/digest-amd64.txt)
+          ARM64_DIGEST=$(cat ${{ runner.temp }}/digests/digest-arm64.txt)
+          docker buildx imagetools create -t ${GHCR_REPO}:${VERSION} \
+            ${GHCR_REPO}@sha256:${AMD64_DIGEST} ${GHCR_REPO}@sha256:${ARM64_DIGEST}
+          if [[ "${GITHUB_REF_TYPE}" == "tag" ]]; then
+            docker buildx imagetools create -t ${GHCR_REPO}:latest \
+              ${GHCR_REPO}@sha256:${AMD64_DIGEST} ${GHCR_REPO}@sha256:${ARM64_DIGEST}
+          fi
+      - name: Inspect manifest
+        run: |
+          echo "Inspecting GHCR manifest:"
+          docker buildx imagetools inspect ${GHCR_REPO}:${VERSION}
+          if [[ "${GITHUB_REF_TYPE}" == "tag" ]]; then
+            echo "Inspecting GHCR latest manifest:"
+            docker buildx imagetools inspect ${GHCR_REPO}:latest
+          fi

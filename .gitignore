@@ -1,0 +1,7 @@
+./*.mp3
+*.wav
+transcriptions*
+dist/
+node_modules/
+kubernetes/secret.yaml
+talk-tailor

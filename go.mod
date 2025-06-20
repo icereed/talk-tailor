@@ -6,7 +6,7 @@ toolchain go1.22.2
 
 require (
 	github.com/Vernacular-ai/godub v0.1.6
-	github.com/gin-contrib/cors v1.7.2
+	github.com/gin-contrib/cors v1.7.6
 	github.com/gin-gonic/gin v1.10.0
 	github.com/hashicorp/go-retryablehttp v0.7.7
 	github.com/sashabaranov/go-openai v1.29.1
